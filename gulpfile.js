@@ -73,8 +73,16 @@ gulp.task('start:server', function() {
   $.connect.server({
     root: [yeoman.app, '.tmp'],
     livereload: true,
+    host: process.env.IP,
     // Change this to '0.0.0.0' to access the server from outside.
-    port: 9000
+    port: 9000,
+    middleware: function (connect) {
+      return [
+        connect().use(
+          '/bower_components',
+          connect.static('./bower_components')
+        )]
+    }
   });
 });
 
@@ -105,11 +113,11 @@ gulp.task('watch', function () {
     .pipe($.plumber())
     .pipe(lintScripts());
 
-  gulp.watch('bower.json', ['bower']);
+  gulp.watch('bower.json', ['wiredep']);
 });
 
 gulp.task('serve', function (cb) {
-  runSequence('clean:tmp',
+  runSequence('clean:tmp',['wiredep'],
     ['lint:scripts'],
     ['start:client'],
     'watch', cb);
@@ -133,13 +141,13 @@ gulp.task('test', ['start:server:test'], function () {
 });
 
 // inject bower components
-gulp.task('bower', function () {
+gulp.task('wiredep', function () {
   return gulp.src(paths.views.main)
     .pipe(wiredep({
-      directory: yeoman.app + '/bower_components',
+      directory: 'bower_components',
       ignorePath: '..'
     }))
-  .pipe(gulp.dest(yeoman.app + '/views'));
+  .pipe(gulp.dest(yeoman.app));
 });
 
 ///////////
@@ -194,7 +202,7 @@ gulp.task('copy:fonts', function () {
 });
 
 gulp.task('build', ['clean:dist'], function () {
-  runSequence(['images', 'copy:extras', 'copy:fonts', 'client:build']);
+  runSequence(['wiredep','images', 'copy:extras', 'copy:fonts', 'client:build']);
 });
 
 gulp.task('default', ['build']);
